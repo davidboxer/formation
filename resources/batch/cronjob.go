@@ -40,8 +40,9 @@ func (c *CronJob) Converged(ctx context.Context, cli client.Client, namespace st
 	if err != nil {
 		return false, err
 	}
-	if cronJob.Status.Active != nil {
-		return true, nil
+	//Check if any active jobs are running, if any is found, return false
+	if len(cronJob.Status.Active) > 0 {
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
