@@ -14,7 +14,7 @@ type Deployment struct {
 	DisableUpdate    bool
 }
 
-//Interface for Deployment for the Formation Controller
+// Interface for Deployment for the Formation Controller
 func NewDeployment(name string, deployment *v1.Deployment) *Deployment {
 	return &Deployment{name: name, deployment: deployment, WaitForConverged: true}
 }
@@ -49,15 +49,3 @@ func (c *Deployment) Converged(ctx context.Context, cli client.Client, namespace
 	}
 	return false, nil
 }
-
-//func (c *Deployment) Update(ctx context.Context, fromApiServer runtime.Object) error {
-//	//For Deployment, we want to ensure our labels, annotation and everything under spec match
-//	deploy, ok := fromApiServer.(*v1.Deployment)
-//	if !ok {
-//		return errors.New("unable to cast object to type: " + c.Type())
-//	}
-//	deploy.Spec = c.deployment.Spec
-//	deploy.Annotations = c.deployment.Annotations
-//	deploy.Labels = c.deployment.Labels
-//	return nil
-//}

@@ -6,22 +6,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Configmap struct {
+type ConfigMap struct {
 	cm            *v1.ConfigMap
 	DisableUpdate bool
 }
 
-func NewConfigmap(cm *v1.ConfigMap) *Configmap {
-	return &Configmap{cm: cm}
+func NewConfigMap(cm *v1.ConfigMap) *ConfigMap {
+	return &ConfigMap{cm: cm}
 }
 
-func (c *Configmap) Type() string { return "configmap" }
+func (c *ConfigMap) Type() string { return "configmap" }
 
-func (c *Configmap) Name() string { return c.cm.Name }
+func (c *ConfigMap) Name() string { return c.cm.Name }
 
-func (c *Configmap) Runtime() client.Object { return &v1.ConfigMap{} }
+func (c *ConfigMap) Runtime() client.Object { return &v1.ConfigMap{} }
 
-func (c *Configmap) Create() (client.Object, error) {
+func (c *ConfigMap) Create() (client.Object, error) {
 	if c.DisableUpdate {
 		if c.cm.Annotations == nil {
 			c.cm.Annotations = make(map[string]string)

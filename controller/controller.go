@@ -31,10 +31,11 @@ func NewController(scheme *runtime.Scheme, cli client.Client) *Controller {
 }
 
 func (c Controller) ForObject(object client.Object) *Controller {
-	return &Controller{cli: c.cli, scheme: c.scheme, object: object}
+	b := &Controller{cli: c.cli, scheme: c.scheme, object: object}
+	return b
 }
 
-func (c *Controller) Reconcile(ctx context.Context, list []types.Resource) (result ctrl.Result, err error) {
+func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (result ctrl.Result, err error) {
 	status, err := c.GetStatus()
 	if err != nil {
 		return ctrl.Result{}, err
@@ -84,7 +85,7 @@ func (c *Controller) Reconcile(ctx context.Context, list []types.Resource) (resu
 			//TODO handle the case where we have a status for no resource. This can happen due to resource being removed from the list.
 			continue
 		}
-		if err := c.reconcile(ctx, r, c.object, c.object.GetNamespace()); err != nil {
+		if err := c.reconcileObject(ctx, r, c.object, c.object.GetNamespace()); err != nil {
 			return ctrl.Result{RequeueAfter: time.Second * 10}, err
 		}
 		if converged, ok := c.object.(types.Converged); ok {
@@ -111,11 +112,22 @@ func (c *Controller) Reconcile(ctx context.Context, list []types.Resource) (resu
 			return ctrl.Result{}, err
 		}
 	}
-
 	return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 }
 
-func (c Controller) reconcile(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) error {
+// ReconcileObject In some cases, we want to reconcile a single object without the need to reconcile the whole formation.
+// This will bypass the status check and will only check if the object exists and if not, create it.
+// All the other logic will be the same as the Reconcile method.
+func (c Controller) ReconcileObject(ctx context.Context, resource types.Resource, owner v1.Object) error {
+	return c.reconcileObject(ctx, resource, owner, owner.GetNamespace())
+}
+
+func (c Controller) reconcileObject(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) error {
+	// Check if the resource is type.Reconcile, with some object like Secret, it might auto generate a new value on every reconcile.
+	// To avoid this, the resource need to implement the type.Reconcile interface to handle its own reconcile.
+	if r, ok := resource.(types.Reconcile); ok {
+		return r.Reconcile(ctx, c.cli, namespace)
+	}
 	// get the resource from the API server
 	instance := resource.Runtime()
 
@@ -186,12 +198,18 @@ func (c Controller) reconcile(ctx context.Context, resource types.Resource, owne
 }
 
 // status.formation
-
-func (c *Controller) GetStatus() (*types.FormationStatus, error) {
+func (c Controller) GetStatus() (*types.FormationStatus, error) {
+	// Check if c.object is type FormationStatusInterface
+	if status, ok := c.object.(types.FormationStatusInterface); ok {
+		return status.GetStatus(), nil
+	}
+	//Use reflection to get the status from the object, this will assume the resource has a status field with a FormationStatus type.
 	value, err := utils.GetValue2(c.object, "Status.Formation")
 	if err != nil {
 		return nil, errors2.New("unable to find formation status")
 	}
+	//The unsafe address is used to get the address of the value, this is needed to convert the value to a pointer.
+
 	ptrToY := unsafe.Pointer(value.UnsafeAddr())
 	return (*types.FormationStatus)(ptrToY), nil
 }

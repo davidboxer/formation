@@ -24,7 +24,7 @@ func (builder *PodBuilder) SetRestartPolicy(restart v1.RestartPolicy) *PodBuilde
 	return builder
 }
 
-func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource) *PodBuilder {
+func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
 		if container.VolumeMounts == nil {
@@ -49,7 +49,6 @@ func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerV
 		}
 		container.VolumeMounts = append(container.VolumeMounts, containerVolume)
 	}
-	return builder
 }
 
 func (builder *PodBuilder) GetVolume(name string) *v1.Volume {
@@ -128,4 +127,14 @@ func GetContainer(spec *v1.PodSpec, name string) *v1.Container {
 		}
 	}
 	return nil
+}
+
+// ResourcesName returns a list of name of the resources
+// The format is <podName>/<containerName>
+func (builder *PodBuilder) ResourcesName() []string {
+	var names []string
+	for _, container := range builder.Spec.Containers {
+		names = append(names, builder.Object.GetName()+"/"+container.Name)
+	}
+	return names
 }

@@ -14,6 +14,10 @@ type Update interface {
 	Update(ctx context.Context, fromApiServer runtime.Object) error
 }
 
+type Reconcile interface {
+	Reconcile(ctx context.Context, client client.Client, namespace string) error
+}
+
 type Resource interface {
 	//The type of Resource, Ex configmap
 	Type() string
@@ -24,4 +28,8 @@ type Resource interface {
 
 	//Create the Resource structure
 	Create() (client.Object, error)
+}
+
+type ToResource interface {
+	ToResource() Resource
 }

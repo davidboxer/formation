@@ -1,8 +1,10 @@
 package core
 
 import (
+	"context"
 	"github.com/Doout/formation/types"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,4 +29,23 @@ func (c *Secret) Create() (client.Object, error) {
 		c.secret.Annotations[types.UpdateKey] = "disabled"
 	}
 	return c.secret, nil
+}
+
+func (c *Secret) Update(ctx context.Context, fromApiServer runtime.Object) error {
+	// Check if fromApiServer is type Secret
+	secret, ok := fromApiServer.(*v1.Secret)
+	if !ok {
+		return types.ErrWrongResourceType
+	}
+
+	// Check if the secret is immutable using annotations
+	if c.secret.Annotations[types.UpdateKey] == "disabled" || secret.Annotations[types.UpdateKey] == "disabled" {
+		return nil
+	}
+	//Check if the secret is immutable using type
+	if secret.Immutable != nil && *secret.Immutable {
+		return nil
+	}
+	secret.Data = c.secret.Data
+	return nil
 }

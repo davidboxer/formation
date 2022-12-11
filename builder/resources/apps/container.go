@@ -68,7 +68,6 @@ func (c *ContainerBuilder) AddPortsRange(startPort v1.ContainerPort, count, step
 		}
 		lastPort.ContainerPort += step32
 		lastPort.Name = name + strconv.Itoa(index)
-
 	}
 	return c
 }
@@ -172,11 +171,6 @@ func (c *ContainerBuilder) EnvironmentFromSourceExist(envFrom v1.EnvFromSource) 
 		}
 	}
 	return -1, false
-}
-
-func (c *ContainerBuilder) AddDefaultEnvironment(name string) *ContainerBuilder {
-	c.AddEnvironmentVariable(true, v1.EnvVar{Name: "SERVICENAME", Value: name})
-	return c
 }
 
 func (c *ContainerBuilder) ToContainer() *v1.Container {

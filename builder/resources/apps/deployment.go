@@ -56,11 +56,46 @@ func (d *DeploymentBuilder) DeepCopy() *DeploymentBuilder {
 	}
 }
 
+func (d *DeploymentBuilder) AddMatchLabel(key, value string) {
+	//Check if MatchLabels nill, if so create it
+	if d.Deployment.Spec.Selector.MatchLabels == nil {
+		d.Deployment.Spec.Selector.MatchLabels = make(map[string]string)
+	}
+	//Check if Template Labels nill, if so create it
+	if d.Deployment.Spec.Template.Labels == nil {
+		d.Deployment.Spec.Template.Labels = make(map[string]string)
+	}
+
+	d.Deployment.Spec.Selector.MatchLabels[key] = value
+	d.Deployment.Spec.Template.Labels[key] = value
+}
+
+func (d *DeploymentBuilder) AddMatchLabels(labels map[string]string) {
+	//Check if MatchLabels nill, if so create it
+	if d.Deployment.Spec.Selector.MatchLabels == nil {
+		d.Deployment.Spec.Selector.MatchLabels = make(map[string]string)
+	}
+	//Check if Template Labels nill, if so create it
+	if d.Deployment.Spec.Template.Labels == nil {
+		d.Deployment.Spec.Template.Labels = make(map[string]string)
+	}
+	for k, v := range labels {
+		d.Deployment.Spec.Selector.MatchLabels[k] = v
+		d.Deployment.Spec.Template.Labels[k] = v
+	}
+}
+
 func (d *DeploymentBuilder) SetReplicas(replicas int) {
 	d.Deployment.Spec.Replicas = utils.Pointer(int32(replicas))
 }
 
 // CreateResource Create the interface to the Formation controller
 func (builder *DeploymentBuilder) CreateResource() types.Resource {
+	builder.Deployment.Labels = builder.Labels()
+	builder.Deployment.Annotations = builder.Annotations()
 	return apps.NewDeployment(builder.Deployment.Name, builder.Deployment)
+}
+
+func (d DeploymentBuilder) ToResource() types.Resource {
+	return apps.NewDeployment(d.Deployment.Name, d.Deployment)
 }

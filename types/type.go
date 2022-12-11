@@ -1,7 +1,13 @@
 package types
 
 import (
+	"errors"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	ErrWrongResourceType = errors.New("wrong resource type")
 )
 
 const (
@@ -43,6 +49,40 @@ const (
 	StorageConfigTypeCreate StorageConfigType = "create"
 )
 
+type LinkVolumeData struct {
+	//The name of the container that this volume is mounted to
+	// Format is <PodName>.<ContainerName>
+	// Wildcard is supported, e.g. <PodName>.* will mount to all containers in the pod
+	// Regex is not supported
+	Visibility []string
+
+	VolumeMount v1.VolumeMount
+
+	//If the Volume is pre-created, or was created by the Formation, what is the reference to it
+	VolumeSource v1.VolumeSource
+
+	// If Template is set, the volume will be created by the template
+	Template *v1.PersistentVolumeClaimSpec
+}
+
+type AddVolumeToContainer interface {
+	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource)
+}
+
+type AddTemplateVolumeToContainer interface {
+	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, template v1.PersistentVolumeClaimSpec)
+}
+
+type ResourcesName interface {
+	// ResourcesName returns a list of names of the resources.
+	// For example, if the resource is a Deployment,
+	//it will return the with a list of container name with the format <Pod-Name>/<Container-Name>
+	ResourcesName() []string
+}
+
+type FormationStatusInterface interface {
+	GetStatus() *FormationStatus
+}
 type ResourceStatus struct {
 	Name  string        `json:"name,omitempty"`
 	Type  string        `json:"type,omitempty"`
@@ -57,7 +97,7 @@ type FormationStatus struct {
 }
 
 func (in *FormationStatus) DeepCopyInto(t *FormationStatus) {
-	t.Resources = make([]*ResourceStatus, len(in.Resources))
+	t.Resources = make([]*ResourceStatus, 0, len(in.Resources))
 	for _, res := range in.Resources {
 		if res == nil {
 			continue
