@@ -28,6 +28,18 @@ type Controller struct {
 	object client.Object
 }
 
+var rejectedPatchList = []string{
+	//Reject all status patch change
+	"/status",
+	//Reject all metadata patch change that managed by Kubernetes
+	"/metadata/creationTimestamp",
+	"/metadata/generation",
+	"/metadata/managedFields",
+	"/metadata/uid",
+	"/metadata/resourceVersion",
+	"/metadata/selfLink",
+}
+
 func NewController(scheme *runtime.Scheme, cli client.Client) *Controller {
 	return &Controller{scheme: scheme, cli: cli}
 }
@@ -91,7 +103,7 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 			return ctrl.Result{RequeueAfter: time.Second * 10}, err
 		}
 		if converged, ok := resource.(types.Converged); ok {
-			if res.State != types.Waiting {
+			if res.State != types.Waiting && res.State != types.Ready {
 				status.Resources[idx].State = types.Waiting
 				if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
 					log.Error().Caller().Err(err).Msg("unable to update formation status")
@@ -186,33 +198,41 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 	instanceCopy := instance.DeepCopyObject()
 	//If resource have custom Update logic, let that logic update the resource and create a patch from that.
 	if sync, ok := resource.(types.Update); ok {
-		obj2 := instance.DeepCopyObject()
-		if err := sync.Update(ctx, obj2); err != nil {
+		if err := sync.Update(ctx, instanceCopy); err != nil {
 			return err
 		}
-		obj = obj2.(client.Object)
+		obj = instanceCopy.(client.Object)
 	} else {
-		if err = mergo.Merge(obj, instance); err != nil {
+		if err = mergo.Merge(obj, instanceCopy, mergo.WithOverride, mergo.WithSliceDeepCopy); err != nil {
 			return err
 		}
+		//obj = instanceCopy.(client.Object)
 	}
 
 	obj.GetAnnotations()[types.HashKey] = hash
 	objbytes, _ := json.Marshal(obj)
-	instanceCopybytes, _ := json.Marshal(instanceCopy)
+	instanceCopybytes, _ := json.Marshal(instance)
+
 	jsonPatchs, _ := jsonpatchv2.CreatePatch(instanceCopybytes, objbytes)
 	//We need at least 2 patch to be able to update the resource.
 	// The first patch will be to update the hash annotations, the other patch will be to update the rest of the resource.
-	if len(jsonPatchs) <= 1 {
-		return nil
-	}
+	totalNumberOfVaildPatch := 0
 	rawPatch := "["
+
+patch:
 	for _, p := range jsonPatchs {
+		for _, rej := range rejectedPatchList {
+			//If the patch is in the rejected list, we skip it.
+			if strings.HasPrefix(p.Path, rej) {
+				continue patch
+			}
+		}
+		totalNumberOfVaildPatch++
 		rawPatch += p.Json() + ","
 	}
 	rawPatch = strings.TrimSuffix(rawPatch, ",")
 	rawPatch += "]"
-
+	log.Debug().Caller().RawJSON("patch", []byte(rawPatch)).Msg("patch")
 	return c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
 }
 

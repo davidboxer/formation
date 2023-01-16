@@ -19,7 +19,7 @@ func NewPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) *PersistentVolumeCl
 }
 
 func (p *PersistentVolumeClaim) Type() string           { return "persistentvolumeclaim" }
-func (p *PersistentVolumeClaim) Name() string           { return p.pvc.Name }
+func (p PersistentVolumeClaim) Name() string            { return p.pvc.Name }
 func (p *PersistentVolumeClaim) Runtime() client.Object { return &v1.PersistentVolumeClaim{} }
 func (p *PersistentVolumeClaim) Create() (client.Object, error) {
 	if p.pvc.Annotations == nil {
