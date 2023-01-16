@@ -11,6 +11,7 @@ import (
 	jsonpatchv2 "gomodules.xyz/jsonpatch/v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
@@ -203,10 +204,10 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 		}
 		obj = instanceCopy.(client.Object)
 	} else {
-		if err = mergo.Merge(obj, instanceCopy, mergo.WithOverride, mergo.WithSliceDeepCopy); err != nil {
+		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithSliceDeepCopy, mergo.WithTransformers(overwriteZeroValueTransformer{})); err != nil {
 			return err
 		}
-		//obj = instanceCopy.(client.Object)
+		obj = instanceCopy.(client.Object)
 	}
 
 	obj.GetAnnotations()[types.HashKey] = hash
@@ -251,4 +252,34 @@ func (c Controller) GetStatus() (*types.FormationStatus, error) {
 
 	ptrToY := unsafe.Pointer(value.UnsafeAddr())
 	return (*types.FormationStatus)(ptrToY), nil
+}
+
+// overwriteZeroValueTransformer The package mergo does not overwrite zero value, this transformer will overwrite zero value.
+// This is needed to update the resource replicas to 0 if the user need to scale down the resource.
+type overwriteZeroValueTransformer struct{}
+
+func (overwriteZeroValueTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if !isNumber(typ) {
+		return nil
+	}
+	return func(dst, src reflect.Value) error {
+		if dst.CanSet() {
+			dst.Set(src)
+			return nil
+		}
+		return nil
+	}
+}
+
+func isNumber(v reflect.Type) bool {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
 }
