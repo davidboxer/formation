@@ -9,8 +9,15 @@ import (
 type ConfigMap struct {
 	cm            *v1.ConfigMap
 	DisableUpdate bool
+	onCreate      func(*v1.ConfigMap)
 }
 
+func NewConfigMapWithOnCreate(cm *v1.ConfigMap, onCreate func(*v1.ConfigMap)) *ConfigMap {
+	if cm == nil {
+		cm = &v1.ConfigMap{}
+	}
+	return &ConfigMap{cm: cm, onCreate: onCreate}
+}
 func NewConfigMap(cm *v1.ConfigMap) *ConfigMap {
 	return &ConfigMap{cm: cm}
 }
@@ -27,6 +34,9 @@ func (c *ConfigMap) Create() (client.Object, error) {
 			c.cm.Annotations = make(map[string]string)
 		}
 		c.cm.Annotations[types.UpdateKey] = "disabled"
+	}
+	if c.onCreate != nil {
+		c.onCreate(c.cm)
 	}
 	return c.cm, nil
 

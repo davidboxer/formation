@@ -81,17 +81,6 @@ func containerNameMatchVisibility(containerName string, visibility string) bool 
 	return false
 }
 
-func FindAllPodBuilder(builder []any) []*PodBuilder {
-	retList := []*PodBuilder{}
-	for _, v := range builder {
-		switch v.(type) {
-		case *DeploymentBuilder:
-			retList = append(retList, v.(*DeploymentBuilder).PodBuilder)
-		}
-	}
-	return retList
-}
-
 func FindAllPodBuilderWithContainerName(builders []*PodBuilder, containerName string) []*PodBuilder {
 	retList := []*PodBuilder{}
 	for index, builder := range builders {

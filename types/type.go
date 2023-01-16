@@ -65,21 +65,6 @@ type LinkVolumeData struct {
 	Template *v1.PersistentVolumeClaimSpec
 }
 
-type AddVolumeToContainer interface {
-	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource)
-}
-
-type AddTemplateVolumeToContainer interface {
-	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, template v1.PersistentVolumeClaimSpec)
-}
-
-type ResourcesName interface {
-	// ResourcesName returns a list of names of the resources.
-	// For example, if the resource is a Deployment,
-	//it will return the with a list of container name with the format <Pod-Name>/<Container-Name>
-	ResourcesName() []string
-}
-
 type FormationStatusInterface interface {
 	GetStatus() *FormationStatus
 }

@@ -2,7 +2,6 @@ package apps
 
 import (
 	"github.com/Doout/formation/builder"
-	"github.com/Doout/formation/internal/utils"
 	"github.com/Doout/formation/resources/apps"
 	"github.com/Doout/formation/types"
 	appsv1 "k8s.io/api/apps/v1"
@@ -15,7 +14,7 @@ type DeploymentBuilder struct {
 	Deployment *appsv1.Deployment
 }
 
-func NewDeploymentBuilder(name string) DeploymentBuilder {
+func NewDeploymentBuilder(name string) *DeploymentBuilder {
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      make(map[string]string),
@@ -31,10 +30,11 @@ func NewDeploymentBuilder(name string) DeploymentBuilder {
 			},
 		},
 	}
-	db := DeploymentBuilder{
+	db := &DeploymentBuilder{
 		PodBuilder: &PodBuilder{
 			Builder: builder.Builder{
 				Object: obj,
+				Name:   name,
 			},
 			Spec: &obj.Spec.Template.Spec,
 		},
@@ -49,6 +49,7 @@ func (d *DeploymentBuilder) DeepCopy() *DeploymentBuilder {
 		PodBuilder: &PodBuilder{
 			Builder: builder.Builder{
 				Object: deployCopy,
+				Name:   d.Name,
 			},
 			Spec: &deployCopy.Spec.Template.Spec,
 		},
@@ -85,17 +86,14 @@ func (d *DeploymentBuilder) AddMatchLabels(labels map[string]string) {
 	}
 }
 
-func (d *DeploymentBuilder) SetReplicas(replicas int) {
-	d.Deployment.Spec.Replicas = utils.Pointer(int32(replicas))
+func (d *DeploymentBuilder) SetReplicas(replicas int32) {
+	d.Deployment.Spec.Replicas = &replicas
 }
 
-// CreateResource Create the interface to the Formation controller
-func (builder *DeploymentBuilder) CreateResource() types.Resource {
+// ToResource Create the interface to the Formation controller
+func (builder *DeploymentBuilder) ToResource() types.Resource {
 	builder.Deployment.Labels = builder.Labels()
 	builder.Deployment.Annotations = builder.Annotations()
+	builder.Deployment.Name = builder.Name
 	return apps.NewDeployment(builder.Deployment.Name, builder.Deployment)
-}
-
-func (d DeploymentBuilder) ToResource() types.Resource {
-	return apps.NewDeployment(d.Deployment.Name, d.Deployment)
 }

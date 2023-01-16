@@ -1,18 +1,14 @@
 package builder
 
 import (
-	"github.com/Doout/formation/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//Builder is a useful wrapper around core resources in Kubernetes.
-//It provides a simple way to add values
+// Builder is a useful wrapper around core resources in Kubernetes.
+// It provides a simple way to add values
 type Builder struct {
 	Object client.Object
-}
-
-type BuilderInterface interface {
-	CreateResource() types.Resource
+	Name   string
 }
 
 func NewBuilder(object client.Object) *Builder {

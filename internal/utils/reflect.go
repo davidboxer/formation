@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Try to find the value given some key, if the key does not exist return a default value
+// GetValueWithDefaultValue Try to find the value given some key, if the key does not exist return a default value
 func GetValueWithDefaultValue(obj interface{}, path string, defaultValue interface{}) interface{} {
 	if obj == nil {
 		return defaultValue

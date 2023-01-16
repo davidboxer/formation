@@ -2,6 +2,7 @@ package apps
 
 import (
 	"github.com/Doout/formation/builder"
+	"github.com/Doout/formation/utils"
 	"k8s.io/api/core/v1"
 	"reflect"
 )
@@ -10,7 +11,6 @@ type PodBuilder struct {
 	builder.Builder
 	Spec *v1.PodSpec
 }
-
 type VolumeTemplateBuilder interface {
 	HandleTemplate(containerName string, containerVolume v1.VolumeMount, pvc v1.PersistentVolumeClaim)
 }
@@ -134,7 +134,55 @@ func GetContainer(spec *v1.PodSpec, name string) *v1.Container {
 func (builder *PodBuilder) ResourcesName() []string {
 	var names []string
 	for _, container := range builder.Spec.Containers {
-		names = append(names, builder.Object.GetName()+"/"+container.Name)
+		names = append(names, builder.Builder.Name+"/"+container.Name)
 	}
 	return names
+}
+
+// AddResourceRequirements
+func (builder *PodBuilder) AddResourceRequirements(containerName string, resourceRequirements v1.ResourceRequirements) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.Resources = resourceRequirements
+	}
+}
+
+// AddEnv
+func (builder *PodBuilder) AddEnv(containerName string, envs ...v1.EnvVar) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		ToContainerBuilder(container).AddEnvironmentVariable(true, envs...)
+	}
+}
+
+// AddAffinity
+func (builder *PodBuilder) AddAffinity(affinity v1.Affinity) {
+	builder.Spec.Affinity = utils.MergeAffinity(*builder.Spec.Affinity, affinity)
+
+}
+
+// AddTolerations
+func (builder *PodBuilder) AddTolerations(tolerations ...v1.Toleration) {
+	builder.Spec.Tolerations = utils.MergeTolerations(builder.Spec.Tolerations, tolerations)
+}
+
+// AddTopologySpreadConstraints
+func (builder *PodBuilder) AddTopologySpreadConstraints(constraints ...v1.TopologySpreadConstraint) {
+	builder.Spec.TopologySpreadConstraints = utils.MergeTopologySpreadConstraints(builder.Spec.TopologySpreadConstraints, constraints)
+}
+
+// SetImage
+func (builder *PodBuilder) SetImage(containerName string, image string) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.Image = image
+	}
+}
+
+func (builder *PodBuilder) AddNodeSelector(name string, value string) {
+	if builder.Spec.NodeSelector == nil {
+		builder.Spec.NodeSelector = map[string]string{}
+	}
+	builder.Spec.NodeSelector[name] = value
+	return
 }

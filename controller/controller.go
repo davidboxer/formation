@@ -2,14 +2,16 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	errors2 "errors"
 	"github.com/Doout/formation/internal/utils"
 	"github.com/Doout/formation/types"
 	"github.com/imdario/mergo"
 	"github.com/rs/zerolog/log"
-	"github.com/snorwin/jsonpatch"
+	jsonpatchv2 "gomodules.xyz/jsonpatch/v2"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -80,15 +82,15 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 			continue
 		}
 		key := strings.ToLower(res.Type + "/" + res.Name)
-		r, ok := resourceMap[key]
+		resource, ok := resourceMap[key]
 		if !ok {
 			//TODO handle the case where we have a status for no resource. This can happen due to resource being removed from the list.
 			continue
 		}
-		if err := c.reconcileObject(ctx, r, c.object, c.object.GetNamespace()); err != nil {
+		if err := c.reconcileObject(ctx, resource, c.object, c.object.GetNamespace()); err != nil {
 			return ctrl.Result{RequeueAfter: time.Second * 10}, err
 		}
-		if converged, ok := c.object.(types.Converged); ok {
+		if converged, ok := resource.(types.Converged); ok {
 			if res.State != types.Waiting {
 				status.Resources[idx].State = types.Waiting
 				if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
@@ -122,6 +124,23 @@ func (c Controller) ReconcileObject(ctx context.Context, resource types.Resource
 	return c.reconcileObject(ctx, resource, owner, owner.GetNamespace())
 }
 
+func (c Controller) createRuntimeObject(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) (client.Object, error) {
+	obj, err := resource.Create()
+	obj.SetNamespace(namespace)
+	if err != nil {
+		log.Error().Caller().Err(err).Send()
+		return nil, err
+	}
+	if err := controllerutil.SetOwnerReference(owner, obj, c.scheme); err != nil {
+		log.Error().Caller().Err(err).Send()
+		return nil, err
+	}
+	if obj.GetAnnotations() == nil {
+		obj.SetAnnotations(map[string]string{})
+	}
+	return obj, nil
+}
+
 func (c Controller) reconcileObject(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) error {
 	// Check if the resource is type.Reconcile, with some object like Secret, it might auto generate a new value on every reconcile.
 	// To avoid this, the resource need to implement the type.Reconcile interface to handle its own reconcile.
@@ -131,51 +150,40 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 	// get the resource from the API server
 	instance := resource.Runtime()
 
-	obj, err := resource.Create()
-	obj.SetNamespace(namespace)
-	if err != nil {
-		log.Error().Caller().Err(err).Send()
-		return err
-	}
-	if err := controllerutil.SetOwnerReference(owner, obj, c.scheme); err != nil {
-		log.Error().Caller().Err(err).Send()
-		return err
-	}
-
-	hash := HashObject(obj)
 	if err := c.cli.Get(ctx, client.ObjectKey{Name: resource.Name(), Namespace: namespace}, instance); err != nil {
 		if errors.IsNotFound(err) {
-			//Create the instance
-			annon := obj.GetAnnotations()
-			if annon == nil {
-				obj.SetAnnotations(map[string]string{})
-				annon = obj.GetAnnotations()
+			obj, err := c.createRuntimeObject(ctx, resource, owner, namespace)
+			if err != nil {
+				return err
 			}
-			annon[types.HashKey] = hash
+			obj.GetAnnotations()[types.HashKey] = HashObject(obj)
 			return c.cli.Create(ctx, obj)
 		}
 		log.Error().Caller().Err(err).Send()
 		return err
 	}
-	instanceCopy := instance.DeepCopyObject()
 
 	// Check if the hash match, this is done to reduce the amount of work we need to do going forward.
 	annotations := instance.GetAnnotations()
-	if h, ok := annotations[types.HashKey]; ok && h == hash {
-		//Nothing changes
-		return nil
+	if annotations == nil {
+		annotations = map[string]string{}
 	}
 
 	if val, ok := annotations[types.UpdateKey]; ok && strings.ToLower(val) == "disabled" {
 		return nil
 	}
-
-	annObj := obj.GetAnnotations()
-	if annObj == nil {
-		obj.SetAnnotations(map[string]string{})
-		annObj = obj.GetAnnotations()
+	// Create the runtime object
+	obj, err := c.createRuntimeObject(ctx, resource, owner, namespace)
+	if err != nil {
+		return err
+	}
+	hash := HashObject(obj)
+	if h, ok := annotations[types.HashKey]; ok && h == hash {
+		//Nothing changes
+		return nil
 	}
 
+	instanceCopy := instance.DeepCopyObject()
 	//If resource have custom Update logic, let that logic update the resource and create a patch from that.
 	if sync, ok := resource.(types.Update); ok {
 		obj2 := instance.DeepCopyObject()
@@ -188,13 +196,24 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 			return err
 		}
 	}
-	obj.GetAnnotations()[types.HashKey] = hash
 
-	jsonPatch, _ := jsonpatch.CreateJSONPatch(obj, instanceCopy)
-	if len(jsonPatch.Raw()) < 2 {
+	obj.GetAnnotations()[types.HashKey] = hash
+	objbytes, _ := json.Marshal(obj)
+	instanceCopybytes, _ := json.Marshal(instanceCopy)
+	jsonPatchs, _ := jsonpatchv2.CreatePatch(instanceCopybytes, objbytes)
+	//We need at least 2 patch to be able to update the resource.
+	// The first patch will be to update the hash annotations, the other patch will be to update the rest of the resource.
+	if len(jsonPatchs) <= 1 {
 		return nil
 	}
-	return c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, jsonPatch.Raw()))
+	rawPatch := "["
+	for _, p := range jsonPatchs {
+		rawPatch += p.Json() + ","
+	}
+	rawPatch = strings.TrimSuffix(rawPatch, ",")
+	rawPatch += "]"
+
+	return c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
 }
 
 // status.formation
