@@ -69,7 +69,10 @@ type ConfigurablePod interface {
 
 	// AddNodeSelector Add node selector to the pod
 	AddNodeSelector(name, value string)
-	// SetReplicas Set the number of replicas
+}
+
+// ConfigurableReplicas is the interface that allows the user to customize the number of replicas
+type ConfigurableReplicas interface {
 	SetReplicas(replica int32)
 }
 
