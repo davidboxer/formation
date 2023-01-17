@@ -123,3 +123,25 @@ func MergeTopologySpreadConstraints(dest, src []v1.TopologySpreadConstraint) []v
 	}
 	return rst
 }
+
+func MergeLocalObjectReference(dest, src []v1.LocalObjectReference) []v1.LocalObjectReference {
+	// Make sure we don't modify the original
+	rst := make([]v1.LocalObjectReference, len(dest))
+	copy(rst, dest)
+	// Merge the src LocalObjectReference into the dest LocalObjectReference
+	for _, t := range src {
+		found := false
+		for i, d := range rst {
+			// If the LocalObjectReference already exists, overwrite it
+			if t.Name == d.Name {
+				rst[i] = t
+				found = true
+				break
+			}
+		}
+		if !found {
+			rst = append(rst, t)
+		}
+	}
+	return rst
+}

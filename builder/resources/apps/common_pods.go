@@ -179,6 +179,27 @@ func (builder *PodBuilder) SetImage(containerName string, image string) {
 	}
 }
 
+func (builder *PodBuilder) SetImagePullPolicy(containerName string, policy v1.PullPolicy) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.ImagePullPolicy = policy
+	}
+}
+
+// ImagePullSecrets
+func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
+	secretReference := []v1.LocalObjectReference{}
+	for _, secretName := range secretNames {
+		secretReference = append(secretReference, v1.LocalObjectReference{Name: secretName})
+	}
+	builder.Spec.ImagePullSecrets = utils.MergeLocalObjectReference(builder.Spec.ImagePullSecrets, secretReference)
+}
+
+// SetServiceAccount
+func (builder *PodBuilder) SetServiceAccountName(serviceAccountName string) {
+	builder.Spec.ServiceAccountName = serviceAccountName
+}
+
 func (builder *PodBuilder) AddNodeSelector(name string, value string) {
 	if builder.Spec.NodeSelector == nil {
 		builder.Spec.NodeSelector = map[string]string{}

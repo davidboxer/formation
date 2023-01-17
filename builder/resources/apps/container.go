@@ -16,6 +16,7 @@ func NewContainer(name string) *ContainerBuilder {
 			Name:                     name,
 			TerminationMessagePath:   "/dev/termination-log",
 			TerminationMessagePolicy: v1.TerminationMessageReadFile,
+			ImagePullPolicy:          v1.PullIfNotPresent,
 		},
 	}
 }

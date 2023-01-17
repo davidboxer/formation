@@ -56,6 +56,8 @@ type ConfigurableContainer interface {
 	AddEnv(containerName string, env ...v1.EnvVar)
 
 	SetImage(containerName string, image string)
+
+	SetImagePullPolicy(containerName string, policy v1.PullPolicy)
 }
 
 // ConfigurablePod is the interface that allows the user to customize the Pod
@@ -69,6 +71,10 @@ type ConfigurablePod interface {
 
 	// AddNodeSelector Add node selector to the pod
 	AddNodeSelector(name, value string)
+
+	AddImagePullSecrets(secretNames ...string)
+
+	SetServiceAccountName(name string)
 }
 
 // ConfigurableReplicas is the interface that allows the user to customize the number of replicas
