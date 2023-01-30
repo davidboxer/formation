@@ -56,8 +56,7 @@ func (kubernetesVolumeV1OverWriteTransformer) Transformer(typ reflect.Type) func
 				// Loop over the dst slice and update the volume if exist in the src map
 				for i, volume := range dstSlice {
 					if srcVolume, ok := srcMap[volume.Name]; ok {
-						// Update the volume
-						dstSlice[i] = srcVolume
+						srcVolume.DeepCopyInto(&dstSlice[i])
 					}
 				}
 				return nil
@@ -87,8 +86,7 @@ func (kubernetesVolumeMountV1OverWriteTransformer) Transformer(typ reflect.Type)
 				// Loop over the dst slice and update the volume if exist in the src map
 				for i, volume := range dstSlice {
 					if srcVolume, ok := srcMap[volume.Name]; ok {
-						// Update the volume
-						dstSlice[i] = srcVolume
+						srcVolume.DeepCopyInto(&dstSlice[i])
 					}
 				}
 				return nil
