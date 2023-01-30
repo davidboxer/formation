@@ -145,3 +145,7 @@ func MergeLocalObjectReference(dest, src []v1.LocalObjectReference) []v1.LocalOb
 	}
 	return rst
 }
+
+func ToPointer[T any](v T) *T {
+	return &v
+}

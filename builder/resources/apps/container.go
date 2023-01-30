@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/Doout/formation/utils"
 	"k8s.io/api/core/v1"
 	"strconv"
 	"strings"
@@ -17,6 +18,16 @@ func NewContainer(name string) *ContainerBuilder {
 			TerminationMessagePath:   "/dev/termination-log",
 			TerminationMessagePolicy: v1.TerminationMessageReadFile,
 			ImagePullPolicy:          v1.PullIfNotPresent,
+			SecurityContext: &v1.SecurityContext{
+				AllowPrivilegeEscalation: utils.ToPointer(false),
+				Capabilities: &v1.Capabilities{
+					Drop: []v1.Capability{"ALL"},
+				},
+				SeccompProfile: &v1.SeccompProfile{
+					Type: "RuntimeDefault",
+				},
+				RunAsNonRoot: utils.ToPointer(true),
+			},
 		},
 	}
 }

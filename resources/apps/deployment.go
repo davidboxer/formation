@@ -16,7 +16,7 @@ type Deployment struct {
 
 // Interface for Deployment for the Formation Controller
 func NewDeployment(name string, deployment *v1.Deployment) *Deployment {
-	return &Deployment{name: name, deployment: deployment, WaitForConverged: true}
+	return &Deployment{name: name, deployment: deployment, WaitForConverged: false}
 }
 
 func (c *Deployment) Type() string { return "deployment" }

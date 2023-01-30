@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	v1 "k8s.io/api/core/v1"
+	v11 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -101,5 +102,5 @@ type Update interface {
 // Reconcile If the resource need to implement their own reconcile logic, they can implement this interface
 // Optional
 type Reconcile interface {
-	Reconcile(ctx context.Context, client client.Client, namespace string) error
+	Reconcile(ctx context.Context, client client.Client, owner v11.Object) error
 }

@@ -117,7 +117,7 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 				return ctrl.Result{}, err
 			}
 			if !ok {
-				return ctrl.Result{RequeueAfter: time.Second}, nil
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 			}
 		}
 		//Update the status
@@ -158,7 +158,7 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 	// Check if the resource is type.Reconcile, with some object like Secret, it might auto generate a new value on every reconcile.
 	// To avoid this, the resource need to implement the type.Reconcile interface to handle its own reconcile.
 	if r, ok := resource.(types.Reconcile); ok {
-		return r.Reconcile(ctx, c.cli, namespace)
+		return r.Reconcile(ctx, c.cli, owner)
 	}
 	// get the resource from the API server
 	instance := resource.Runtime()
@@ -204,7 +204,7 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 		}
 		obj = instanceCopy.(client.Object)
 	} else {
-		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithSliceDeepCopy, mergo.WithTransformers(overwriteZeroValueTransformer{})); err != nil {
+		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithSliceDeepCopy, mergo.WithSliceDeepCopy, mergo.WithTransformers(overwriteZeroValueTransformer{})); err != nil {
 			return err
 		}
 		obj = instanceCopy.(client.Object)
@@ -233,7 +233,7 @@ patch:
 	}
 	rawPatch = strings.TrimSuffix(rawPatch, ",")
 	rawPatch += "]"
-	log.Debug().Caller().RawJSON("patch", []byte(rawPatch)).Msg("patch")
+	log.Debug().Caller().Str("instance", instance.GetName()).RawJSON("patch", []byte(rawPatch)).Msg("patch")
 	return c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
 }
 
