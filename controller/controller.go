@@ -208,7 +208,7 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 		}
 		obj = instanceCopy.(client.Object)
 	} else {
-		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithSliceDeepCopy, mergo.WithSliceDeepCopy, mergo.WithTransformers(c.transformers)); err != nil {
+		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithTransformers(c.transformers)); err != nil {
 			return err
 		}
 		obj = instanceCopy.(client.Object)
