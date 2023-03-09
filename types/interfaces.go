@@ -91,6 +91,15 @@ type Converged interface {
 	Converged(ctx context.Context, client client.Client, namespace string) (bool, error)
 }
 
+// ConvergedGroup group of resources that need to be converged together but not necessarily in order
+type ConvergedGroupInterface interface {
+	// SetConvergedGroupID set the group id for the resource. ID must be greater than 0
+	// ID of 0 means the resource is not part of any group and must be converged before the next resource will be checked
+	SetConvergedGroupID(uid int)
+	// GetConvergedGroupID get the group id for the resource
+	GetConvergedGroupID() int
+}
+
 // Update is the interface that allows each resource to implement their own update logic.
 // The default behaviour for the build-in controller is to merge the new into the old.
 // To get more control of the resource lifecycle, the controller can implement Reconcile
@@ -102,5 +111,5 @@ type Update interface {
 // Reconcile If the resource need to implement their own reconcile logic, they can implement this interface
 // Optional
 type Reconcile interface {
-	Reconcile(ctx context.Context, client client.Client, owner v11.Object) error
+	Reconcile(ctx context.Context, client client.Client, owner v11.Object) (bool, error)
 }

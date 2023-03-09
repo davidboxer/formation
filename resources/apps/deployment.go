@@ -8,6 +8,7 @@ import (
 )
 
 type Deployment struct {
+	*types.ConvergedGroup
 	name             string
 	deployment       *v1.Deployment
 	WaitForConverged bool

@@ -7,6 +7,7 @@ import (
 )
 
 type PersistentVolumeClaim struct {
+	*types.ConvergedGroup
 	pvc *v1.PersistentVolumeClaim
 }
 

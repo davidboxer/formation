@@ -9,6 +9,7 @@ import (
 )
 
 type Secret struct {
+	*types.ConvergedGroup
 	secret        *v1.Secret
 	onCreate      func(*v1.Secret)
 	DisableUpdate bool

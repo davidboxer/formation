@@ -8,6 +8,7 @@ import (
 )
 
 type CronJob struct {
+	*types.ConvergedGroup
 	name             string
 	cronJob          *vv1.CronJob
 	WaitForConverged bool

@@ -2,12 +2,14 @@ package apps
 
 import (
 	"github.com/Doout/formation/builder"
+	"github.com/Doout/formation/types"
 	"github.com/Doout/formation/utils"
 	"k8s.io/api/core/v1"
 	"reflect"
 )
 
 type PodBuilder struct {
+	*types.ConvergedGroup
 	builder.Builder
 	Spec *v1.PodSpec
 }
@@ -205,5 +207,4 @@ func (builder *PodBuilder) AddNodeSelector(name string, value string) {
 		builder.Spec.NodeSelector = map[string]string{}
 	}
 	builder.Spec.NodeSelector[name] = value
-	return
 }

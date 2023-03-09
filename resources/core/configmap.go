@@ -7,6 +7,7 @@ import (
 )
 
 type ConfigMap struct {
+	*types.ConvergedGroup
 	cm            *v1.ConfigMap
 	DisableUpdate bool
 	onCreate      func(*v1.ConfigMap)

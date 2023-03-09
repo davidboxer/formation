@@ -99,3 +99,21 @@ func (in *FormationStatus) DeepCopy() *FormationStatus {
 	in.DeepCopyInto(out)
 	return out
 }
+
+type ConvergedGroup struct {
+	id int
+}
+
+func (c *ConvergedGroup) SetConvergedGroupID(id int) {
+	c.id = id
+}
+
+func (c *ConvergedGroup) GetConvergedGroupID() int {
+	if c == nil {
+		return 0
+	}
+	if c.id <= 0 {
+		return 0
+	}
+	return c.id
+}

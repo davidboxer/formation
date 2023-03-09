@@ -104,9 +104,30 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 			//TODO handle the case where we have a status for no resource. This can happen due to resource being removed from the list.
 			continue
 		}
-		if err := c.reconcileObject(ctx, resource, c.object, c.object.GetNamespace()); err != nil {
+		change, err := c.reconcileObject(ctx, resource, c.object, c.object.GetNamespace())
+		if err != nil {
 			return ctrl.Result{RequeueAfter: time.Second * 10}, err
 		}
+		//If the object is not changed, we can skip the rest of the process
+		if !change && res.State == types.Ready {
+			continue
+		}
+		//Change there is some change, we need to update the status of this resource
+		if res.State != types.Waiting {
+			status.Resources[idx].State = types.Waiting
+			if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
+				log.Error().Caller().Err(err).Msg("unable to update formation status")
+				return ctrl.Result{}, err
+			}
+		}
+
+		//Check if this resource is a part of ConvergedGroupInterface
+		currentGroup := 0
+		var convergedGroup types.ConvergedGroupInterface
+		if convergedGroup, ok = resource.(types.ConvergedGroupInterface); ok {
+			currentGroup = convergedGroup.GetConvergedGroupID()
+		}
+		updateStatus := true
 		if converged, ok := resource.(types.Converged); ok {
 			if res.State != types.Waiting && res.State != types.Ready {
 				status.Resources[idx].State = types.Waiting
@@ -120,24 +141,65 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 				log.Error().Caller().Err(err).Msg("unable to check if formation is converged")
 				return ctrl.Result{}, err
 			}
-			if !ok {
+			// Handle the non group case where everything is GroupID 0. So no Group
+			if currentGroup == 0 && !ok {
 				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 			}
+			// Look ahead to see if the next resource is in the same group
+			nextGroupID := nextGroupIDFromList(status.Resources, resourceMap, idx)
+			if nextGroupID == currentGroup && currentGroup != 0 && ok {
+				updateStatus = true
+			} else {
+				// If the next resource is not in the same group, we can not move forward unless all resources before this are converged
+				for i := 0; i < idx; i++ {
+					if status.Resources[i].State != types.Ready {
+						updateStatus = false
+						break
+					}
+				}
+			}
 		}
-		//Update the status
-		status.Resources[idx].State = types.Ready
-		if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
-			log.Error().Caller().Err(err).Msg("unable to update formation status")
-			return ctrl.Result{}, err
+		if updateStatus {
+			//Update the status
+			status.Resources[idx].State = types.Ready
+			if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
+				log.Error().Caller().Err(err).Msg("unable to update formation status")
+				return ctrl.Result{}, err
+			}
 		}
 	}
-	return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+	//Check if all resources are Ready
+	for _, res := range status.Resources {
+		if res == nil {
+			continue
+		}
+		if res.State != types.Ready {
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
+	}
+	return ctrl.Result{}, nil
+}
+
+func nextGroupIDFromList(statusList []*types.ResourceStatus, resourceMap map[string]types.Resource, idx int) int {
+	if idx+1 >= len(statusList) {
+		return 0
+	}
+	nextResourceStatus := statusList[idx+1]
+	nextKey := strings.ToLower(nextResourceStatus.Type + "/" + nextResourceStatus.Name)
+	nextResource, ok := resourceMap[nextKey]
+	if !ok {
+		return 0
+	}
+	if convergedGroup, ok := nextResource.(types.ConvergedGroupInterface); ok {
+		return convergedGroup.GetConvergedGroupID()
+	}
+	return 0
 }
 
 // ReconcileObject In some cases, we want to reconcile a single object without the need to reconcile the whole formation.
 // This will bypass the status check and will only check if the object exists and if not, create it.
 // All the other logic will be the same as the Reconcile method.
-func (c Controller) ReconcileObject(ctx context.Context, resource types.Resource, owner v1.Object) error {
+func (c Controller) ReconcileObject(ctx context.Context, resource types.Resource, owner v1.Object) (bool, error) {
 	return c.reconcileObject(ctx, resource, owner, owner.GetNamespace())
 }
 
@@ -158,7 +220,7 @@ func (c Controller) createRuntimeObject(ctx context.Context, resource types.Reso
 	return obj, nil
 }
 
-func (c Controller) reconcileObject(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) error {
+func (c Controller) reconcileObject(ctx context.Context, resource types.Resource, owner v1.Object, namespace string) (bool, error) {
 	// Check if the resource is type.Reconcile, with some object like Secret, it might auto generate a new value on every reconcile.
 	// To avoid this, the resource need to implement the type.Reconcile interface to handle its own reconcile.
 	if r, ok := resource.(types.Reconcile); ok {
@@ -171,13 +233,13 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 		if errors.IsNotFound(err) {
 			obj, err := c.createRuntimeObject(ctx, resource, owner, namespace)
 			if err != nil {
-				return err
+				return false, err
 			}
 			obj.GetAnnotations()[types.HashKey] = HashObject(obj)
-			return c.cli.Create(ctx, obj)
+			return true, c.cli.Create(ctx, obj)
 		}
 		log.Error().Caller().Err(err).Send()
-		return err
+		return false, err
 	}
 
 	// Check if the hash match, this is done to reduce the amount of work we need to do going forward.
@@ -187,29 +249,29 @@ func (c Controller) reconcileObject(ctx context.Context, resource types.Resource
 	}
 
 	if val, ok := annotations[types.UpdateKey]; ok && strings.ToLower(val) == "disabled" {
-		return nil
+		return false, nil
 	}
 	// Create the runtime object
 	obj, err := c.createRuntimeObject(ctx, resource, owner, namespace)
 	if err != nil {
-		return err
+		return false, err
 	}
 	hash := HashObject(obj)
 	if h, ok := annotations[types.HashKey]; ok && h == hash {
 		//Nothing changes
-		return nil
+		return false, nil
 	}
 
 	instanceCopy := instance.DeepCopyObject()
 	//If resource have custom Update logic, let that logic update the resource and create a patch from that.
 	if sync, ok := resource.(types.Update); ok {
 		if err := sync.Update(ctx, instanceCopy); err != nil {
-			return err
+			return false, err
 		}
 		obj = instanceCopy.(client.Object)
 	} else {
 		if err = mergo.Merge(instanceCopy, obj, mergo.WithOverride, mergo.WithTransformers(c.transformers)); err != nil {
-			return err
+			return false, err
 		}
 		obj = instanceCopy.(client.Object)
 	}
@@ -237,8 +299,12 @@ patch:
 	}
 	rawPatch = strings.TrimSuffix(rawPatch, ",")
 	rawPatch += "]"
+	// In some case; the hash will be the only thing that change, in this case, we don't want to update the resource.
+	if totalNumberOfVaildPatch < 2 && strings.Contains(rawPatch, "replace") {
+		return false, nil
+	}
 	log.Debug().Caller().Str("instance", instance.GetName()).RawJSON("patch", []byte(rawPatch)).Msg("patch")
-	return c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
+	return true, c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
 }
 
 // status.formation

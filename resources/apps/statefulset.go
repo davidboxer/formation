@@ -8,6 +8,7 @@ import (
 )
 
 type StatefulSet struct {
+	*types.ConvergedGroup
 	name             string
 	statefulSet      *v1.StatefulSet
 	WaitForConverged bool

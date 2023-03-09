@@ -9,6 +9,7 @@ import (
 )
 
 type Job struct {
+	*types.ConvergedGroup
 	name             string
 	job              *v1.Job
 	WaitForConverged bool
