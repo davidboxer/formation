@@ -59,7 +59,7 @@ type LinkVolumeData struct {
 	VolumeMount v1.VolumeMount `json:"volumeMount,omitempty" yaml:"volumeMount"`
 
 	//If the Volume is pre-created, or was created by the Formation, what is the reference to it
-	VolumeSource v1.VolumeSource `json:"volumeSource,omitempty" yaml:"volumeSource"`
+	VolumeSource *v1.VolumeSource `json:"volumeSource,omitempty" yaml:"volumeSource"`
 
 	// If Template is set, the volume will be created by the template
 	Template *v1.PersistentVolumeClaimSpec `json:"template,omitempty" yaml:"template"`

@@ -44,11 +44,11 @@ func LinkVolumes(objects []any, volumes []types.LinkVolumeData) {
 								// Add the template volume
 								addTemplateVolume.AddVolumeToContainer(resContainerName, volume.VolumeMount, *volume.Template)
 							}
-						} else {
+						} else if volume.VolumeSource != nil { // Check if the Volume is an VolumeSource
 							// check if object have type.AddVolume
 							if addVolume, ok := obj.(types.AddVolumeToContainer); ok {
 								// Add the volume
-								addVolume.AddVolumeToContainer(resContainerName, volume.VolumeMount, volume.VolumeSource)
+								addVolume.AddVolumeToContainer(resContainerName, volume.VolumeMount, *volume.VolumeSource)
 							}
 						}
 					}
