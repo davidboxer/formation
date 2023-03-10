@@ -26,6 +26,18 @@ func (builder *PodBuilder) SetRestartPolicy(restart v1.RestartPolicy) *PodBuilde
 	return builder
 }
 
+// AddEnvFromSourceToContainer Add environment variables from a source to the container
+func (builder *PodBuilder) AddEnvFromSourceToContainer(containerName string, envFromSource v1.EnvFromSource) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		if container.EnvFrom == nil {
+			container.EnvFrom = []v1.EnvFromSource{}
+		}
+		container.EnvFrom = append(container.EnvFrom, envFromSource)
+	}
+}
+
+// AddVolumeToContainer Add a volume to the container
 func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
@@ -53,6 +65,7 @@ func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerV
 	}
 }
 
+// GetVolume Get a volume from the pod that match the name
 func (builder *PodBuilder) GetVolume(name string) *v1.Volume {
 	for idx, v := range builder.Spec.Volumes {
 		if v.Name == name {
@@ -62,10 +75,12 @@ func (builder *PodBuilder) GetVolume(name string) *v1.Volume {
 	return nil
 }
 
+// GetContainer Get a container from the pod that match the name
 func (builder *PodBuilder) GetContainer(name string) *v1.Container {
 	return GetContainer(builder.Spec, name)
 }
 
+// AddEnvToAllContainer Add environment variables to all containers
 func (builder *PodBuilder) AddEnvToAllContainer(envVar ...v1.EnvVar) *PodBuilder {
 	for index := range builder.Spec.Containers {
 		ToContainerBuilder(&builder.Spec.Containers[index]).AddEnvironmentVariable(true, envVar...)
@@ -76,6 +91,7 @@ func (builder *PodBuilder) AddEnvToAllContainer(envVar ...v1.EnvVar) *PodBuilder
 	return builder
 }
 
+// AddEnvToContainer Add environment variables to the container
 func (builder *PodBuilder) AddEnvToContainer(containerName string, envVar ...v1.EnvVar) *PodBuilder {
 	container := builder.GetContainer(containerName)
 	cbuilder := ToContainerBuilder(container)
@@ -85,11 +101,13 @@ func (builder *PodBuilder) AddEnvToContainer(containerName string, envVar ...v1.
 	return builder
 }
 
+// SetServiceAccount Set the service account for the pod
 func (builder *PodBuilder) SetServiceAccount(name string) *PodBuilder {
 	builder.Spec.ServiceAccountName = name
 	return builder
 }
 
+// AddContainer Add a container to the pod
 func (builder *PodBuilder) AddContainer(container *v1.Container) *PodBuilder {
 	if builder.Spec.Containers == nil {
 		builder.Spec.Containers = []v1.Container{*container}
@@ -99,6 +117,7 @@ func (builder *PodBuilder) AddContainer(container *v1.Container) *PodBuilder {
 	return builder
 }
 
+// AddInitContainer Add a init container to the pod
 func (builder *PodBuilder) AddInitContainer(container *v1.Container) *PodBuilder {
 	syncContainer(container)
 	if builder.Spec.InitContainers == nil {
@@ -115,6 +134,7 @@ func syncContainer(container *v1.Container) {
 	}
 }
 
+// GetContainer Get a container from the pod that match the name
 func GetContainer(spec *v1.PodSpec, name string) *v1.Container {
 	list := spec.Containers
 	for index, item := range list {
@@ -141,7 +161,7 @@ func (builder *PodBuilder) ResourcesName() []string {
 	return names
 }
 
-// AddResourceRequirements
+// AddResourceRequirements add resource requirements to the container
 func (builder *PodBuilder) AddResourceRequirements(containerName string, resourceRequirements v1.ResourceRequirements) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
@@ -149,7 +169,7 @@ func (builder *PodBuilder) AddResourceRequirements(containerName string, resourc
 	}
 }
 
-// AddEnv
+// AddEnv add environment variables to the container
 func (builder *PodBuilder) AddEnv(containerName string, envs ...v1.EnvVar) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
@@ -157,23 +177,23 @@ func (builder *PodBuilder) AddEnv(containerName string, envs ...v1.EnvVar) {
 	}
 }
 
-// AddAffinity
+// AddAffinity add affinity to the pod
 func (builder *PodBuilder) AddAffinity(affinity v1.Affinity) {
 	builder.Spec.Affinity = utils.MergeAffinity(*builder.Spec.Affinity, affinity)
 
 }
 
-// AddTolerations
+// AddTolerations add tolerations to the pod
 func (builder *PodBuilder) AddTolerations(tolerations ...v1.Toleration) {
 	builder.Spec.Tolerations = utils.MergeTolerations(builder.Spec.Tolerations, tolerations)
 }
 
-// AddTopologySpreadConstraints
+// AddTopologySpreadConstraints add topology spread constraints to the pod
 func (builder *PodBuilder) AddTopologySpreadConstraints(constraints ...v1.TopologySpreadConstraint) {
 	builder.Spec.TopologySpreadConstraints = utils.MergeTopologySpreadConstraints(builder.Spec.TopologySpreadConstraints, constraints)
 }
 
-// SetImage
+// SetImage set the image of the container
 func (builder *PodBuilder) SetImage(containerName string, image string) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
@@ -181,6 +201,7 @@ func (builder *PodBuilder) SetImage(containerName string, image string) {
 	}
 }
 
+// SetImagePullPolicy set the image pull policy of the container
 func (builder *PodBuilder) SetImagePullPolicy(containerName string, policy v1.PullPolicy) {
 	container := builder.GetContainer(containerName)
 	if container != nil {
@@ -188,7 +209,7 @@ func (builder *PodBuilder) SetImagePullPolicy(containerName string, policy v1.Pu
 	}
 }
 
-// ImagePullSecrets
+// ImagePullSecrets add image pull secrets to the pod
 func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
 	secretReference := []v1.LocalObjectReference{}
 	for _, secretName := range secretNames {
@@ -197,11 +218,12 @@ func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
 	builder.Spec.ImagePullSecrets = utils.MergeLocalObjectReference(builder.Spec.ImagePullSecrets, secretReference)
 }
 
-// SetServiceAccount
+// SetServiceAccountName set the service account of the pod
 func (builder *PodBuilder) SetServiceAccountName(serviceAccountName string) {
 	builder.Spec.ServiceAccountName = serviceAccountName
 }
 
+// AddNodeSelector add node selector to the pod
 func (builder *PodBuilder) AddNodeSelector(name string, value string) {
 	if builder.Spec.NodeSelector == nil {
 		builder.Spec.NodeSelector = map[string]string{}

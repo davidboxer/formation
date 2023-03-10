@@ -54,15 +54,22 @@ type LinkVolumeData struct {
 	// Format is <PodName>.<ContainerName>
 	// Wildcard is supported, e.g. <PodName>.* will mount to all containers in the pod
 	// Regex is not supported
-	Visibility []string
+	Visibility []string `json:"visibility,omitempty" yaml:"visibility"`
 
-	VolumeMount v1.VolumeMount
+	VolumeMount v1.VolumeMount `json:"volumeMount,omitempty" yaml:"volumeMount"`
 
 	//If the Volume is pre-created, or was created by the Formation, what is the reference to it
-	VolumeSource v1.VolumeSource
+	VolumeSource v1.VolumeSource `json:"volumeSource,omitempty" yaml:"volumeSource"`
 
 	// If Template is set, the volume will be created by the template
-	Template *v1.PersistentVolumeClaimSpec
+	Template *v1.PersistentVolumeClaimSpec `json:"template,omitempty" yaml:"template"`
+
+	// The sources to populate environment variables in the container.
+	// The keys defined within a source must be a C_IDENTIFIER. All invalid keys
+	// will be reported as an event when the container is starting. When a key exists in multiple
+	// sources, the value associated with the last source will take precedence.
+	// Values defined by an Env with a duplicate key will take precedence.
+	EnvFromSource *v1.EnvFromSource `json:"envFromSource,omitempty" yaml:"envFromSource"`
 }
 
 type FormationStatusInterface interface {

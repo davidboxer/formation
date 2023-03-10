@@ -32,6 +32,10 @@ type AddVolumeToContainer interface {
 	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, volume v1.VolumeSource)
 }
 
+type AddEnvFromSourceToContainer interface {
+	AddEnvFromSourceToContainer(containerName string, envFromSource v1.EnvFromSource)
+}
+
 // AddTemplateVolumeToContainer is the interface that adds a Volume Template to the builder and which container it belongs to
 type AddTemplateVolumeToContainer interface {
 	AddVolumeToContainer(containerName string, containerVolume v1.VolumeMount, template v1.PersistentVolumeClaimSpec)

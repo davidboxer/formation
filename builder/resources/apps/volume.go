@@ -30,8 +30,15 @@ func LinkVolumes(objects []any, volumes []types.LinkVolumeData) {
 					resPodName, resContainerName := splitVisibility(name)
 					// Check if the podName and containerName match the visibility
 					if podNameMatchVisibility(resPodName, podName) && containerNameMatchVisibility(resContainerName, containerName) {
-						// Check if the Volume is an Template
-						if volume.Template != nil {
+						// Check if the Volume is an EnvFromSource
+						if volume.EnvFromSource != nil {
+							// check if object have type.AddEnvFromSource
+							if addEnvFromSource, ok := obj.(types.AddEnvFromSourceToContainer); ok {
+								// Add the envFromSource
+								addEnvFromSource.AddEnvFromSourceToContainer(resContainerName, *volume.EnvFromSource)
+							}
+
+						} else if volume.Template != nil { // Check if the Volume is an Template
 							// check if object have type.AddTemplateVolume
 							if addTemplateVolume, ok := obj.(types.AddTemplateVolumeToContainer); ok {
 								// Add the template volume
