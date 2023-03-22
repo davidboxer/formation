@@ -35,6 +35,7 @@ func NewJobBuilder(name string) *JobBuilder {
 	}
 	return &JobBuilder{
 		PodBuilder: &apps.PodBuilder{
+			ConvergedGroup: &types.ConvergedGroup{},
 			Builder: builder.Builder{
 				Object: obj,
 				Name:   name,
@@ -69,5 +70,7 @@ func (builder *JobBuilder) ToResource() types.Resource {
 	builder.Job.Labels = builder.Labels()
 	builder.Job.Annotations = builder.Annotations()
 	builder.Job.Name = builder.Name
-	return batch.NewJob(builder.Job.Name, builder.Job)
+	a := batch.NewJob(builder.Job)
+	a.SetConvergedGroupID(builder.GetConvergedGroupID())
+	return a
 }

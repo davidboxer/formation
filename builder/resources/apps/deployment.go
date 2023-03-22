@@ -32,6 +32,7 @@ func NewDeploymentBuilder(name string) *DeploymentBuilder {
 	}
 	db := &DeploymentBuilder{
 		PodBuilder: &PodBuilder{
+			ConvergedGroup: &types.ConvergedGroup{},
 			Builder: builder.Builder{
 				Object: obj,
 				Name:   name,
@@ -45,8 +46,11 @@ func NewDeploymentBuilder(name string) *DeploymentBuilder {
 
 func (d *DeploymentBuilder) DeepCopy() *DeploymentBuilder {
 	deployCopy := d.Deployment.DeepCopy()
+	cg := &types.ConvergedGroup{}
+	cg.SetConvergedGroupID(d.GetConvergedGroupID())
 	return &DeploymentBuilder{
 		PodBuilder: &PodBuilder{
+			ConvergedGroup: cg,
 			Builder: builder.Builder{
 				Object: deployCopy,
 				Name:   d.Name,
@@ -95,5 +99,7 @@ func (builder *DeploymentBuilder) ToResource() types.Resource {
 	builder.Deployment.Labels = builder.Labels()
 	builder.Deployment.Annotations = builder.Annotations()
 	builder.Deployment.Name = builder.Name
-	return apps.NewDeployment(builder.Deployment.Name, builder.Deployment)
+	a := apps.NewDeployment(builder.Deployment)
+	a.SetConvergedGroupID(builder.GetConvergedGroupID())
+	return a
 }

@@ -2,6 +2,7 @@ package batch
 
 import (
 	"context"
+	"github.com/Doout/formation/resources/common"
 	"github.com/Doout/formation/types"
 	v1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -9,27 +10,23 @@ import (
 )
 
 type Job struct {
-	*types.ConvergedGroup
-	name             string
-	job              *v1.Job
+	*common.SimpleResource[*v1.Job]
 	WaitForConverged bool
 }
 
-func NewJob(name string, job *v1.Job) *Job {
-	return &Job{name: name, job: job, WaitForConverged: true}
+func NewJob(job *v1.Job) *Job {
+	return &Job{
+		SimpleResource:   common.NewSimpleResource("job", job),
+		WaitForConverged: true,
+	}
 }
-
-func (c *Job) Type() string           { return "job" }
-func (c *Job) Name() string           { return c.name }
-func (c *Job) Runtime() client.Object { return &v1.Job{} }
-
 func (c *Job) Create() (client.Object, error) {
 	//Once a Job is created, it is not possible to update it.
-	if c.job.Annotations == nil {
-		c.job.Annotations = make(map[string]string)
+	if c.Obj.Annotations == nil {
+		c.Obj.Annotations = make(map[string]string)
 	}
-	c.job.Annotations[types.UpdateKey] = "disabled"
-	return c.job, nil
+	c.Obj.Annotations[types.UpdateKey] = "disabled"
+	return c.Obj, nil
 }
 
 func (c *Job) Update(ctx context.Context, fromApiServer runtime.Object) error {
@@ -42,7 +39,7 @@ func (c *Job) Converged(ctx context.Context, cli client.Client, namespace string
 	}
 
 	job := &v1.Job{}
-	err := cli.Get(ctx, client.ObjectKey{Name: c.name, Namespace: namespace}, job)
+	err := cli.Get(ctx, client.ObjectKey{Name: c.Obj.Name, Namespace: namespace}, job)
 	if err != nil {
 		return false, err
 	}

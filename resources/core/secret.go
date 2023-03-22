@@ -2,24 +2,23 @@ package core
 
 import (
 	"context"
+	"github.com/Doout/formation/resources/common"
 	"github.com/Doout/formation/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Secret struct {
-	*types.ConvergedGroup
-	secret        *v1.Secret
-	onCreate      func(*v1.Secret)
-	DisableUpdate bool
+	*common.SimpleResource[*v1.Secret]
 }
 
 func NewSecret(secret *v1.Secret) *Secret {
 	if secret == nil {
 		secret = &v1.Secret{}
 	}
-	return &Secret{secret: secret}
+	return &Secret{
+		SimpleResource: common.NewSimpleResource("secret", secret),
+	}
 }
 
 // NewSecretWithOnCreate is a helper function to create a Secret with a onCreate function
@@ -29,26 +28,10 @@ func NewSecretWithOnCreate(secret *v1.Secret, onCreate func(*v1.Secret)) *Secret
 	if secret == nil {
 		secret = &v1.Secret{}
 	}
-	return &Secret{secret: secret, onCreate: onCreate}
-}
-
-func (c *Secret) Type() string           { return "secret" }
-func (c *Secret) Name() string           { return c.secret.Name }
-func (c *Secret) Runtime() client.Object { return &v1.Secret{} }
-
-func (c *Secret) Create() (client.Object, error) {
-	if c.DisableUpdate {
-		if c.secret.Annotations == nil {
-			c.secret.Annotations = make(map[string]string)
-		}
-		c.secret.Annotations[types.UpdateKey] = "disabled"
+	return &Secret{
+		SimpleResource: common.NewSimpleResourceWithOnCreate("secret", secret, onCreate),
 	}
-	if c.onCreate != nil {
-		c.onCreate(c.secret)
-	}
-	return c.secret, nil
 }
-
 func (c *Secret) Update(ctx context.Context, fromApiServer runtime.Object) error {
 	// Check if fromApiServer is type Secret
 	secret, ok := fromApiServer.(*v1.Secret)
@@ -60,13 +43,12 @@ func (c *Secret) Update(ctx context.Context, fromApiServer runtime.Object) error
 	if secret.Annotations[types.UpdateKey] == "disabled" {
 		return nil
 	}
-	// Update metadata
-	//update all labels are updated
-	for k, v := range c.secret.Labels {
+	// Update all the metadata
+	for k, v := range c.Obj.Labels {
 		secret.Labels[k] = v
 	}
 	//Update all annotations are updated
-	for k, v := range c.secret.Annotations {
+	for k, v := range c.Obj.Annotations {
 		secret.Annotations[k] = v
 	}
 
@@ -74,6 +56,6 @@ func (c *Secret) Update(ctx context.Context, fromApiServer runtime.Object) error
 	if secret.Immutable != nil && *secret.Immutable {
 		return nil
 	}
-	secret.Data = c.secret.Data
+	secret.Data = c.Obj.Data
 	return nil
 }
