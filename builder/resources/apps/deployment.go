@@ -84,9 +84,13 @@ func (d *DeploymentBuilder) AddMatchLabels(labels map[string]string) {
 	if d.Deployment.Spec.Template.Labels == nil {
 		d.Deployment.Spec.Template.Labels = make(map[string]string)
 	}
+	if d.Deployment.Labels == nil {
+		d.Deployment.Labels = make(map[string]string)
+	}
 	for k, v := range labels {
 		d.Deployment.Spec.Selector.MatchLabels[k] = v
 		d.Deployment.Spec.Template.Labels[k] = v
+		d.Deployment.Labels = d.Deployment.Spec.Template.Labels
 	}
 }
 
