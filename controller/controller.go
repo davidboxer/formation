@@ -127,7 +127,6 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 		if convergedGroup, ok = resource.(types.ConvergedGroupInterface); ok {
 			currentGroup = convergedGroup.GetConvergedGroupID()
 		}
-		updateStatus := true
 		if converged, ok := resource.(types.Converged); ok {
 			if res.State != types.Waiting && res.State != types.Ready {
 				status.Resources[idx].State = types.Waiting
@@ -136,31 +135,46 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 					return ctrl.Result{}, err
 				}
 			}
-			ok, err := converged.Converged(ctx, c.cli, c.object.GetNamespace())
+			updateStatus, err := converged.Converged(ctx, c.cli, c.object.GetNamespace())
 			if err != nil {
 				log.Error().Caller().Err(err).Msg("unable to check if formation is converged")
 				return ctrl.Result{}, err
 			}
-			// Handle the non group case where everything is GroupID 0. So no Group
-			if currentGroup == 0 && !ok {
-				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+			// Update the status if needed, the rest of the logic below handle the group case
+			if updateStatus {
+				status.Resources[idx].State = types.Ready
+				if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
+					log.Error().Caller().Err(err).Msg("unable to update formation status")
+					return ctrl.Result{}, err
+				}
+				//If the current group is 0, and this resource is converged, we can skip the rest of the logic
+				if currentGroup == 0 {
+					continue
+				}
 			}
+
 			// Look ahead to see if the next resource is in the same group
 			nextGroupID := nextGroupIDFromList(status.Resources, resourceMap, idx)
-			if nextGroupID == currentGroup && currentGroup != 0 && ok {
-				updateStatus = true
-			} else {
-				// If the next resource is not in the same group, we can not move forward unless all resources before this are converged
+
+			// Group id 0 mean no group and -1 mean no more resource. In both case we need to wait for the current resource to be converged
+			if (currentGroup == 0 || nextGroupID == -1) && !updateStatus {
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+			}
+
+			if nextGroupID != currentGroup {
+				allReady := true
+				// Check if all resources upto this point are converged,
 				for i := 0; i < idx; i++ {
 					if status.Resources[i].State != types.Ready {
-						updateStatus = false
+						allReady = false
 						break
 					}
 				}
+				if !allReady {
+					return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+				}
 			}
-		}
-		if updateStatus {
-			//Update the status
+		} else {
 			status.Resources[idx].State = types.Ready
 			if err := c.cli.Status().Patch(ctx, c.object, client.MergeFrom(copyInstance)); err != nil {
 				log.Error().Caller().Err(err).Msg("unable to update formation status")
@@ -182,7 +196,7 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 
 func nextGroupIDFromList(statusList []*types.ResourceStatus, resourceMap map[string]types.Resource, idx int) int {
 	if idx+1 >= len(statusList) {
-		return 0
+		return -1
 	}
 	nextResourceStatus := statusList[idx+1]
 	nextKey := strings.ToLower(nextResourceStatus.Type + "/" + nextResourceStatus.Name)

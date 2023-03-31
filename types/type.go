@@ -22,9 +22,9 @@ const (
 type ResourceState string
 
 const (
-	Creating ResourceState = "creating"
-	Ready    ResourceState = "ready"
-	Waiting  ResourceState = "waiting"
+	Creating ResourceState = "Creating"
+	Ready    ResourceState = "Ready"
+	Waiting  ResourceState = "Waiting"
 )
 
 // StorageConfigType manages the formation's interpretation of a StorageConfig; each
