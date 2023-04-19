@@ -49,16 +49,17 @@ func (kubernetesVolumeV1OverWriteTransformer) Transformer(typ reflect.Type) func
 				srcSlice := src.Interface().([]v1.Volume)
 				dstSlice := dst.Interface().([]v1.Volume)
 				// create a map of volume name to volume
-				dstMap := map[string]v1.Volume{}
-				for _, volume := range dstSlice {
-					dstMap[volume.Name] = volume
+				dstMap := map[string]int{}
+				for idx, volume := range dstSlice {
+					dstMap[volume.Name] = idx
 				}
 				// Loop over the src volume and overwrite the dst volume, if the volume is missing in the dst, it will be added
 				// Use DeepCopyInto to copy the src volume to dst volume
-				for i, volume := range srcSlice {
+				for _, volume := range srcSlice {
 					if dstVolume, ok := dstMap[volume.Name]; ok {
-						volume.DeepCopyInto(&dstVolume)
-						dstSlice[i] = dstVolume
+						temp := dstSlice[dstVolume]
+						volume.DeepCopyInto(&temp)
+						dstSlice[dstVolume] = temp
 					} else {
 						volumeCopy := volume.DeepCopy()
 						dstSlice = append(dstSlice, *volumeCopy)
@@ -85,16 +86,17 @@ func (kubernetesVolumeMountV1OverWriteTransformer) Transformer(typ reflect.Type)
 				srcSlice := src.Interface().([]v1.VolumeMount)
 				dstSlice := dst.Interface().([]v1.VolumeMount)
 				// create a map of volume name to volume
-				dstMap := map[string]v1.VolumeMount{}
-				for _, volume := range dstSlice {
-					dstMap[volume.Name] = volume
+				dstMap := map[string]int{}
+				for idx, volume := range dstSlice {
+					dstMap[volume.Name] = idx
 				}
 				// Loop over the src volume and overwrite the dst volume, if the volume is missing in the dst, it will be added
 				// Use DeepCopyInto to copy the src volume to dst volume
-				for i, volume := range srcSlice {
+				for _, volume := range srcSlice {
 					if dstVolume, ok := dstMap[volume.Name]; ok {
-						volume.DeepCopyInto(&dstVolume)
-						dstSlice[i] = dstVolume
+						temp := dstSlice[dstVolume]
+						volume.DeepCopyInto(&temp)
+						dstSlice[dstVolume] = temp
 					} else {
 						volumeCopy := volume.DeepCopy()
 						dstSlice = append(dstSlice, *volumeCopy)
