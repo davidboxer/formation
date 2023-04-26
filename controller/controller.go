@@ -74,22 +74,38 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 	//Go over each resource and check if it exists in the status, if not, add.
 	//This task need to be done every reconcile as this list might be outdated on the next call.
 	var patch client.Patch
+	resourcesStatus := make([]*types.ResourceStatus, 0, len(list))
 	for idx, res := range list {
 		key := strings.ToLower(res.Type() + "/" + res.Name())
 		resourceMap[key] = list[idx]
 		//Check if status hold this
-		if _, ok := statusMap[key]; !ok {
+		if val, ok := statusMap[key]; ok {
+			resourcesStatus = append(resourcesStatus, val)
+			delete(statusMap, key)
+		} else {
 			if patch == nil {
 				patch = client.MergeFrom(c.object.DeepCopyObject().(client.Object))
 			}
-			status.Resources = append(status.Resources, &types.ResourceStatus{
+			rs := &types.ResourceStatus{
 				Name:  res.Name(),
 				Type:  res.Type(),
 				State: types.Creating,
-			})
+			}
+			resourcesStatus = append(resourcesStatus, rs)
 		}
 	}
+	//Add all the resources that are not in the list
+	if len(statusMap) > 0 {
+		if patch == nil {
+			patch = client.MergeFrom(c.object.DeepCopyObject().(client.Object))
+		}
+		for _, val := range statusMap {
+			resourcesStatus = append(resourcesStatus, val)
+		}
+	}
+
 	if patch != nil {
+		status.Resources = resourcesStatus
 		return ctrl.Result{Requeue: true}, c.cli.Status().Patch(ctx, c.object, patch)
 	}
 
