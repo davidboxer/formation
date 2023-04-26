@@ -164,7 +164,7 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 			if nextGroupID != currentGroup {
 				allReady := true
 				// Check if all resources upto this point are converged,
-				for i := 0; i < idx; i++ {
+				for i := 0; i <= idx; i++ {
 					if status.Resources[i].State != types.Ready {
 						allReady = false
 						break
