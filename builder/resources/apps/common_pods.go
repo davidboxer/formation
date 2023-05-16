@@ -61,6 +61,12 @@ func (builder *PodBuilder) AddVolumeToContainer(containerName string, containerV
 		if !skipPodVolume {
 			builder.Spec.Volumes = append(builder.Spec.Volumes, newVolume)
 		}
+		//Check if this volume already exist in container.VolumeMounts
+		for _, item := range container.VolumeMounts {
+			if item.Name == containerVolume.Name {
+				return
+			}
+		}
 		container.VolumeMounts = append(container.VolumeMounts, containerVolume)
 	}
 }
