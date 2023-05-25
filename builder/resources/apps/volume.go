@@ -74,7 +74,11 @@ func podNameMatchVisibility(podName string, visibility string) bool {
 	}
 	// Since the podName can also include the instance prefix. Check if the visibility match the podName end
 	if strings.HasSuffix(podName, visibility) {
-		return true
+		// If the character before the suffix is a dash, then it is a match.
+		// If the podName == visibility, then it is a match as well.
+		if len(podName) == len(visibility) || podName[len(podName)-len(visibility)-1] == '-' {
+			return true
+		}
 	}
 	return false
 }

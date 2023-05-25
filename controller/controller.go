@@ -16,6 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sort"
 	"strings"
 	"time"
 	"unsafe"
@@ -96,12 +97,34 @@ func (c Controller) Reconcile(ctx context.Context, list []types.Resource) (resul
 	}
 	//Add all the resources that are not in the list
 	if len(statusMap) > 0 {
-		if patch == nil {
-			patch = client.MergeFrom(c.object.DeepCopyObject().(client.Object))
-		}
+		leftOver := make([]*types.ResourceStatus, 0, len(statusMap))
 		for _, val := range statusMap {
-			resourcesStatus = append(resourcesStatus, val)
+			leftOver = append(leftOver, val)
 		}
+		//Sort the left over, Map are not order and if we have any change in order; the status will be updated
+		sort.Slice(leftOver, func(i, j int) bool {
+			return leftOver[i].Name+leftOver[i].Type < leftOver[j].Name+leftOver[j].Type
+		})
+		resourcesStatus = append(resourcesStatus, leftOver...)
+	}
+
+	// Compare the status and the list, if there is a change, we need to update the status
+	requestUpdate := len(status.Resources) != len(resourcesStatus)
+	if !requestUpdate {
+		// Check if all the resources are in the same order
+		for idx, res := range status.Resources {
+			if res == nil {
+				continue
+			}
+			if res.Name != resourcesStatus[idx].Name || res.Type != resourcesStatus[idx].Type {
+				requestUpdate = true
+				break
+			}
+		}
+	}
+
+	if requestUpdate {
+		patch = client.MergeFrom(c.object.DeepCopyObject().(client.Object))
 	}
 
 	if patch != nil {
