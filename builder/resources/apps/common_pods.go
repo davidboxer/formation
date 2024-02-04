@@ -224,6 +224,30 @@ func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
 	builder.Spec.ImagePullSecrets = utils.MergeLocalObjectReference(builder.Spec.ImagePullSecrets, secretReference)
 }
 
+// SetStartupProbe set the startup probe of the container
+func (builder *PodBuilder) SetStartupProbe(containerName string, probe v1.Probe) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.StartupProbe = &probe
+	}
+}
+
+// SetLivenessProbe set the liveness probe of the container
+func (builder *PodBuilder) SetLivenessProbe(containerName string, probe v1.Probe) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.LivenessProbe = &probe
+	}
+}
+
+// SetReadinessProbe set the readiness probe of the container
+func (builder *PodBuilder) SetReadinessProbe(containerName string, probe v1.Probe) {
+	container := builder.GetContainer(containerName)
+	if container != nil {
+		container.ReadinessProbe = &probe
+	}
+}
+
 // SetServiceAccountName set the service account of the pod
 func (builder *PodBuilder) SetServiceAccountName(serviceAccountName string) {
 	builder.Spec.ServiceAccountName = serviceAccountName

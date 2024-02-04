@@ -52,6 +52,24 @@ func (c *ContainerBuilder) SetImage(image string) *ContainerBuilder {
 	return c
 }
 
+// SetReadinessProbe Set the readiness probe for the container
+func (c *ContainerBuilder) SetReadinessProbe(readinessProbe v1.Probe) *ContainerBuilder {
+	c.ReadinessProbe = readinessProbe.DeepCopy()
+	return c
+}
+
+// SetLivenessProbe Set the liveness probe for the container
+func (c *ContainerBuilder) SetLivenessProbe(livenessProbe v1.Probe) *ContainerBuilder {
+	c.LivenessProbe = livenessProbe.DeepCopy()
+	return c
+}
+
+// SetStartupProbe Set the startup probe for the container
+func (c *ContainerBuilder) SetStartupProbe(startupProbe v1.Probe) *ContainerBuilder {
+	c.StartupProbe = startupProbe.DeepCopy()
+	return c
+}
+
 func (c *ContainerBuilder) SetSecurityContext(securityContext v1.SecurityContext) *ContainerBuilder {
 	c.SecurityContext = securityContext.DeepCopy()
 	return c
