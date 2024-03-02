@@ -78,6 +78,7 @@ type FormationStatusInterface interface {
 type ResourceStatus struct {
 	Name  string        `json:"name,omitempty"`
 	Type  string        `json:"type,omitempty"`
+	Group string        `json:"group,omitempty"`
 	State ResourceState `json:"state,omitempty"`
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format="date-time"
@@ -94,7 +95,8 @@ func (in *FormationStatus) DeepCopyInto(t *FormationStatus) {
 		if res == nil {
 			continue
 		}
-		t.Resources = append(t.Resources, &ResourceStatus{Name: res.Name, Type: res.Type, State: res.State})
+		t.Resources = append(t.Resources,
+			&ResourceStatus{Name: res.Name, Group: res.Group, Type: res.Type, State: res.State})
 	}
 }
 
