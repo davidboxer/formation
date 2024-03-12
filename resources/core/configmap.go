@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/Doout/formation/resources/common"
-	"k8s.io/api/core/v1"
+	"github.com/davidboxer/formation/resources/common"
+	v1 "k8s.io/api/core/v1"
 )
 
 type ConfigMap struct {

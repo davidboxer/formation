@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/Doout/formation/resources/common"
+	"github.com/davidboxer/formation/resources/common"
 	v1 "k8s.io/api/core/v1"
 )
 

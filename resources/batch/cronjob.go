@@ -2,7 +2,8 @@ package batch
 
 import (
 	"context"
-	"github.com/Doout/formation/resources/common"
+
+	"github.com/davidboxer/formation/resources/common"
 	vv1 "k8s.io/api/batch/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

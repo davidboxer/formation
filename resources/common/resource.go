@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/Doout/formation/types"
 	"reflect"
+
+	"github.com/davidboxer/formation/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

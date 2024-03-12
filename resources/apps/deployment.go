@@ -2,7 +2,8 @@ package apps
 
 import (
 	"context"
-	"github.com/Doout/formation/resources/common"
+
+	"github.com/davidboxer/formation/resources/common"
 	v1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

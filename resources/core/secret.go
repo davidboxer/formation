@@ -2,8 +2,9 @@ package core
 
 import (
 	"context"
-	"github.com/Doout/formation/resources/common"
-	"github.com/Doout/formation/types"
+
+	"github.com/davidboxer/formation/resources/common"
+	"github.com/davidboxer/formation/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )

@@ -1,11 +1,12 @@
 package apps
 
 import (
-	"github.com/Doout/formation/builder"
-	"github.com/Doout/formation/types"
-	"github.com/Doout/formation/utils"
-	"k8s.io/api/core/v1"
 	"reflect"
+
+	"github.com/davidboxer/formation/builder"
+	"github.com/davidboxer/formation/types"
+	"github.com/davidboxer/formation/utils"
+	v1 "k8s.io/api/core/v1"
 )
 
 type PodBuilder struct {

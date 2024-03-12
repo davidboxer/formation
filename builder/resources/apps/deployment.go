@@ -1,9 +1,9 @@
 package apps
 
 import (
-	"github.com/Doout/formation/builder"
-	"github.com/Doout/formation/resources/apps"
-	"github.com/Doout/formation/types"
+	"github.com/davidboxer/formation/builder"
+	"github.com/davidboxer/formation/resources/apps"
+	"github.com/davidboxer/formation/types"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
