@@ -434,7 +434,11 @@ patch:
 	if totalNumberOfVaildPatch < 2 && strings.Contains(rawPatch, "replace") {
 		return false, nil
 	}
-	log.Debug().Caller().Str("instance", instance.GetName()).RawJSON("patch", []byte(rawPatch)).Msg("patch")
+	if instance.GetObjectKind().GroupVersionKind().Kind != "Secret" {
+		log.Debug().Caller().Str("instance", instance.GetName()).RawJSON("patch", []byte(rawPatch)).Msg("patch")
+	} else {
+		log.Debug().Caller().Str("instance", instance.GetName()).Msg("patch")
+	}
 	return true, c.cli.Patch(ctx, instance, client.RawPatch(k8sTypes.JSONPatchType, []byte(rawPatch)))
 }
 
