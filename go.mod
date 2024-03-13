@@ -1,4 +1,4 @@
-module github.com/Doout/formation
+module github.com/davidboxer/formation
 
 go 1.18
 
