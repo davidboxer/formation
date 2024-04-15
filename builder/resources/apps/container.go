@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/davidboxer/formation/types"
 	"strconv"
 	"strings"
 
@@ -68,6 +69,24 @@ func (c *ContainerBuilder) SetLivenessProbe(livenessProbe v1.Probe) *ContainerBu
 // SetStartupProbe Set the startup probe for the container
 func (c *ContainerBuilder) SetStartupProbe(startupProbe v1.Probe) *ContainerBuilder {
 	c.StartupProbe = startupProbe.DeepCopy()
+	return c
+}
+
+// SetReadinessProbeConfiguration Set the readiness probe's configuration for the container
+func (c *ContainerBuilder) SetReadinessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	setProbeConfiguration(c.ReadinessProbe, config)
+	return c
+}
+
+// SetLivenessProbeConfiguration Set the liveness probe's configuration for the container
+func (c *ContainerBuilder) SetLivenessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	setProbeConfiguration(c.LivenessProbe, config)
+	return c
+}
+
+// SetStartupProbeConfiguration Set the startup probe's configuration for the container
+func (c *ContainerBuilder) SetStartupProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	setProbeConfiguration(c.StartupProbe, config)
 	return c
 }
 
