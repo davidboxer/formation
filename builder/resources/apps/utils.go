@@ -5,9 +5,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// setProbeConfiguration set the probe's parameters based on the configuration.
+// ApplyProbeConfiguration set the probe's parameters based on the configuration.
 // If the probe is nil then the configuration is not applied.
-func setProbeConfiguration(probe *v1.Probe, config types.ProbeConfiguration) {
+func ApplyProbeConfiguration(probe *v1.Probe, config types.ProbeConfiguration) {
 	// If the probe is nil, don't configure
 	if probe == nil {
 		return

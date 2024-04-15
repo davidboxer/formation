@@ -251,17 +251,17 @@ func (builder *PodBuilder) SetReadinessProbe(containerName string, probe v1.Prob
 
 func (builder *PodBuilder) SetStartupProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	setProbeConfiguration(container.StartupProbe, config)
+	ApplyProbeConfiguration(container.StartupProbe, config)
 }
 
 func (builder *PodBuilder) SetLivenessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	setProbeConfiguration(container.LivenessProbe, config)
+	ApplyProbeConfiguration(container.LivenessProbe, config)
 }
 
 func (builder *PodBuilder) SetReadinessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	setProbeConfiguration(container.ReadinessProbe, config)
+	ApplyProbeConfiguration(container.ReadinessProbe, config)
 }
 
 // SetServiceAccountName set the service account of the pod

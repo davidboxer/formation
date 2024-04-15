@@ -74,19 +74,19 @@ func (c *ContainerBuilder) SetStartupProbe(startupProbe v1.Probe) *ContainerBuil
 
 // SetReadinessProbeConfiguration Set the readiness probe's configuration for the container
 func (c *ContainerBuilder) SetReadinessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
-	setProbeConfiguration(c.ReadinessProbe, config)
+	ApplyProbeConfiguration(c.ReadinessProbe, config)
 	return c
 }
 
 // SetLivenessProbeConfiguration Set the liveness probe's configuration for the container
 func (c *ContainerBuilder) SetLivenessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
-	setProbeConfiguration(c.LivenessProbe, config)
+	ApplyProbeConfiguration(c.LivenessProbe, config)
 	return c
 }
 
 // SetStartupProbeConfiguration Set the startup probe's configuration for the container
 func (c *ContainerBuilder) SetStartupProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
-	setProbeConfiguration(c.StartupProbe, config)
+	ApplyProbeConfiguration(c.StartupProbe, config)
 	return c
 }
 
