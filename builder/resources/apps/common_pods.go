@@ -225,16 +225,19 @@ func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
 	builder.Spec.ImagePullSecrets = utils.MergeLocalObjectReference(builder.Spec.ImagePullSecrets, secretReference)
 }
 
+// SetStartupProbeConfiguration set the startup probe configuration for the container
 func (builder *PodBuilder) SetStartupProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
 	ApplyProbeConfiguration(container.StartupProbe, config)
 }
 
+// SetLivenessProbeConfiguration set the liveness probe configuration for the container
 func (builder *PodBuilder) SetLivenessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
 	ApplyProbeConfiguration(container.LivenessProbe, config)
 }
 
+// SetReadinessProbeConfiguration set the readiness probe configuration for the container
 func (builder *PodBuilder) SetReadinessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
 	ApplyProbeConfiguration(container.ReadinessProbe, config)

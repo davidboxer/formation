@@ -12,12 +12,12 @@ func ApplyProbeConfiguration(probe *v1.Probe, config types.ProbeConfiguration) {
 	if probe == nil {
 		return
 	}
-	// If the  probe is not enabled, set the probe to nil
+	// If the probe is not enabled in the configuration, set the probe to nil
 	if !config.Enable {
 		probe = nil
 		return
 	}
-	// Set the probe's parameters
+	// If the probe is enabled in the configuration, set the probe's parameters
 	if config.InitialDelaySeconds != nil {
 		probe.InitialDelaySeconds = *config.InitialDelaySeconds
 	}
