@@ -64,14 +64,14 @@ type ConfigurableContainer interface {
 
 	SetImagePullPolicy(containerName string, policy v1.PullPolicy)
 
-	// SetStartupProbe Set the startup probe for the container
-	SetStartupProbe(containerName string, probe v1.Probe)
+	// SetStartupProbeConfiguration Set the startup probe configuration for the container
+	SetStartupProbeConfiguration(containerName string, probe ProbeConfiguration)
 
-	// SetReadinessProbe Set the readiness probe for the container
-	SetReadinessProbe(containerName string, probe v1.Probe)
+	// SetReadinessProbeConfiguration Set the readiness probe configuration for the container
+	SetReadinessProbeConfiguration(containerName string, probe ProbeConfiguration)
 
-	// SetLivenessProbe Set the liveness probe for the container
-	SetLivenessProbe(containerName string, probe v1.Probe)
+	// SetLivenessProbeConfiguration Set the liveness probe configuration for the container
+	SetLivenessProbeConfiguration(containerName string, probe ProbeConfiguration)
 }
 
 // ConfigurablePod is the interface that allows the user to customize the Pod

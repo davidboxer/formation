@@ -72,6 +72,64 @@ type LinkVolumeData struct {
 	EnvFromSource *v1.EnvFromSource `json:"envFromSource,omitempty" yaml:"envFromSource"`
 }
 
+type ProbeConfiguration struct {
+	// Enable specifies whether the probe is enabled.
+	// The default value is true.
+	// +kubebuilder:default=true
+	// +optional
+	Enable bool `json:"enable" yaml:"enable"`
+	// Number of seconds after the container has started before liveness probes are initiated.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// +optional
+	InitialDelaySeconds *int32 `json:"initialDelaySeconds,omitempty" protobuf:"varint,2,opt,name=initialDelaySeconds"`
+	// Number of seconds after which the probe times out.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// +optional
+	TimeoutSeconds *int32 `json:"timeoutSeconds,omitempty" protobuf:"varint,3,opt,name=timeoutSeconds"`
+	// How often (in seconds) to perform the probe.
+	// +optional
+	PeriodSeconds *int32 `json:"periodSeconds,omitempty" protobuf:"varint,4,opt,name=periodSeconds"`
+	// Minimum consecutive successes for the probe to be considered successful after having failed.
+	// +optional
+	SuccessThreshold *int32 `json:"successThreshold,omitempty" protobuf:"varint,5,opt,name=successThreshold"`
+	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
+	// +optional
+	FailureThreshold *int32 `json:"failureThreshold,omitempty" protobuf:"varint,6,opt,name=failureThreshold"`
+}
+
+func (in *ProbeConfiguration) DeepCopyInto(t *ProbeConfiguration) {
+	t.Enable = in.Enable
+	if in.InitialDelaySeconds != nil {
+		t.InitialDelaySeconds = new(int32)
+		*t.InitialDelaySeconds = *in.InitialDelaySeconds
+	}
+	if in.TimeoutSeconds != nil {
+		t.TimeoutSeconds = new(int32)
+		*t.TimeoutSeconds = *in.TimeoutSeconds
+	}
+	if in.PeriodSeconds != nil {
+		t.PeriodSeconds = new(int32)
+		*t.PeriodSeconds = *in.PeriodSeconds
+	}
+	if in.SuccessThreshold != nil {
+		t.SuccessThreshold = new(int32)
+		*t.SuccessThreshold = *in.SuccessThreshold
+	}
+	if in.FailureThreshold != nil {
+		t.FailureThreshold = new(int32)
+		*t.FailureThreshold = *in.FailureThreshold
+	}
+}
+
+func (in *ProbeConfiguration) DeepCopy() *ProbeConfiguration {
+	if in == nil {
+		return nil
+	}
+	out := new(ProbeConfiguration)
+	in.DeepCopyInto(out)
+	return out
+}
+
 type FormationStatusInterface interface {
 	GetStatus() *FormationStatus
 }

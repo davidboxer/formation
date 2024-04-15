@@ -225,28 +225,22 @@ func (builder *PodBuilder) AddImagePullSecrets(secretNames ...string) {
 	builder.Spec.ImagePullSecrets = utils.MergeLocalObjectReference(builder.Spec.ImagePullSecrets, secretReference)
 }
 
-// SetStartupProbe set the startup probe of the container
-func (builder *PodBuilder) SetStartupProbe(containerName string, probe v1.Probe) {
+// SetStartupProbeConfiguration set the startup probe configuration for the container
+func (builder *PodBuilder) SetStartupProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	if container != nil {
-		container.StartupProbe = &probe
-	}
+	ApplyProbeConfiguration(container.StartupProbe, config)
 }
 
-// SetLivenessProbe set the liveness probe of the container
-func (builder *PodBuilder) SetLivenessProbe(containerName string, probe v1.Probe) {
+// SetLivenessProbeConfiguration set the liveness probe configuration for the container
+func (builder *PodBuilder) SetLivenessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	if container != nil {
-		container.LivenessProbe = &probe
-	}
+	ApplyProbeConfiguration(container.LivenessProbe, config)
 }
 
-// SetReadinessProbe set the readiness probe of the container
-func (builder *PodBuilder) SetReadinessProbe(containerName string, probe v1.Probe) {
+// SetReadinessProbeConfiguration set the readiness probe configuration for the container
+func (builder *PodBuilder) SetReadinessProbeConfiguration(containerName string, config types.ProbeConfiguration) {
 	container := builder.GetContainer(containerName)
-	if container != nil {
-		container.ReadinessProbe = &probe
-	}
+	ApplyProbeConfiguration(container.ReadinessProbe, config)
 }
 
 // SetServiceAccountName set the service account of the pod

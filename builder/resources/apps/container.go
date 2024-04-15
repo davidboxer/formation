@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/davidboxer/formation/types"
 	"strconv"
 	"strings"
 
@@ -53,21 +54,21 @@ func (c *ContainerBuilder) SetImage(image string) *ContainerBuilder {
 	return c
 }
 
-// SetReadinessProbe Set the readiness probe for the container
-func (c *ContainerBuilder) SetReadinessProbe(readinessProbe v1.Probe) *ContainerBuilder {
-	c.ReadinessProbe = readinessProbe.DeepCopy()
+// SetReadinessProbeConfiguration Set the readiness probe's configuration for the container
+func (c *ContainerBuilder) SetReadinessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	ApplyProbeConfiguration(c.ReadinessProbe, config)
 	return c
 }
 
-// SetLivenessProbe Set the liveness probe for the container
-func (c *ContainerBuilder) SetLivenessProbe(livenessProbe v1.Probe) *ContainerBuilder {
-	c.LivenessProbe = livenessProbe.DeepCopy()
+// SetLivenessProbeConfiguration Set the liveness probe's configuration for the container
+func (c *ContainerBuilder) SetLivenessProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	ApplyProbeConfiguration(c.LivenessProbe, config)
 	return c
 }
 
-// SetStartupProbe Set the startup probe for the container
-func (c *ContainerBuilder) SetStartupProbe(startupProbe v1.Probe) *ContainerBuilder {
-	c.StartupProbe = startupProbe.DeepCopy()
+// SetStartupProbeConfiguration Set the startup probe's configuration for the container
+func (c *ContainerBuilder) SetStartupProbeConfiguration(config types.ProbeConfiguration) *ContainerBuilder {
+	ApplyProbeConfiguration(c.StartupProbe, config)
 	return c
 }
 
